@@ -1,7 +1,7 @@
-import { parse } from 'node-html-parser'
-import { ChuniClient } from './client'
-import { qs } from './dom'
-import { debugLog } from '@/utils'
+import {parse} from 'node-html-parser'
+import {ChuniClient} from './client'
+import {qs} from './dom'
+import {debugLog} from '@/utils'
 
 export interface PlayerProfile {
     name: string
@@ -14,6 +14,7 @@ export interface PlayerProfile {
     classImage: string
     lastPlayDate: string
     playerLevel: string
+    teamName: string
 }
 
 function extractLastPart(url: string): string {
@@ -58,6 +59,7 @@ export function parseProfile(html: string): PlayerProfile {
         classImage: root.querySelector('.player_classemblem_top img')?.getAttribute('src') || 'https://chunithm-net-eng.com/mobile/images/classemblem_medal_01.png',
         lastPlayDate: qs(root, '.player_lastplaydate_text'),
         playerLevel: qs(root, '.player_lv'),
+        teamName: qs(root, '.player_team_name')
     }
 }
 
@@ -71,7 +73,7 @@ export async function fetchProfile(clal: string): Promise<PlayerProfile> {
     debugLog(`fetchProfile: playerData ${html.length} bytes, collection ${characterHTML.length} bytes`)
     debugLog('fetchProfile: playerData head:', html.slice(0, 300).replace(/\s+/g, ' '))
 
-    const profile = { ...parseProfile(html), characterImageUrl: parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src') || '' }
+    const profile = {...parseProfile(html), characterImageUrl: parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src') || ''}
 
     if (!profile.name && !profile.lastPlayDate) {
         debugLog('fetchProfile: empty profile parsed (likely unauthenticated or region-blocked page)')
