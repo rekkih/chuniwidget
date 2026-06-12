@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "description_mode" text DEFAULT 'title' NOT NULL;

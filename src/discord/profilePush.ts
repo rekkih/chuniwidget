@@ -1,6 +1,7 @@
 import {botApi} from './client'
 import {formatRelativeTime, numToRoman} from '@/utils'
 import type {PlayerProfile} from '@/chunithm-net'
+import {buildDescription, type DescriptionMode} from './descriptionModes'
 
 type DynamicTextField = { type: 1; name: string; value: string };
 type DynamicImageField = { type: 3; name: string; value: { url: string } };
@@ -28,6 +29,7 @@ export async function pushProfile(
     discordUserId: string,
     segaId: string,
     profile: PlayerProfile,
+    descriptionMode: DescriptionMode | null,
 ): Promise<void> {
     const appId = process.env.DISCORD_CLIENT_ID!
 
@@ -36,7 +38,7 @@ export async function pushProfile(
 
     const classLv = numToRoman(Number(profile.classImage.split('_').at(-1)?.split('.')[0]))
 
-    const description = `${profile.title ?? 'NEW COMER'}`
+    const description = buildDescription(descriptionMode, profile)
 
     const dynamic: DynamicField[] = [
         text('name', profile.name || segaId),

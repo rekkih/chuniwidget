@@ -3,6 +3,7 @@ import type {
     ChatInputCommandInteraction,
     ModalSubmitInteraction,
     SlashCommandBuilder,
+    StringSelectMenuInteraction,
 } from 'discord.js'
 
 export type CommandStep = {
@@ -22,7 +23,13 @@ export type ModalStep = {
     run(interaction: ModalSubmitInteraction): Promise<void>
 }
 
-export type Step = CommandStep | ButtonStep | ModalStep
+export type SelectStep = {
+    type: 'select'
+    id: string
+    run(interaction: StringSelectMenuInteraction): Promise<void>
+}
+
+export type Step = CommandStep | ButtonStep | ModalStep | SelectStep
 
 export type BotCommand = {
     definition: SlashCommandBuilder

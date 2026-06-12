@@ -5,6 +5,7 @@ export const users = pgTable('users', {
     segaId: text('sega_id').notNull(),
     externalId: text('external_id'),
     chuniToken: text('chuni_token').notNull(),
+    descriptionMode: text('description_mode').notNull().default('title'),
     linkedAt: timestamp('linked_at', {withTimezone: true}).notNull().defaultNow(),
     lastSyncedAt: timestamp('last_synced_at', {withTimezone: true}),
     lastPlayedAt: timestamp('last_played_at', {withTimezone: true}),

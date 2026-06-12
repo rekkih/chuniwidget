@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import {Client, GatewayIntentBits, REST, Routes} from 'discord.js'
-import type {ButtonStep, CommandStep, ModalStep} from './types'
+import type {ButtonStep, CommandStep, ModalStep, SelectStep} from './types'
 import {commands} from './commands'
 import {ensureWidgetConfig} from './discord/widgetConfig'
 import {startOAuthServer} from './oauth2/server'
@@ -17,6 +17,7 @@ if (!token || !clientId) {
 const commandMap = new Map<string, CommandStep>()
 const buttonMap = new Map<string, ButtonStep>()
 const modalMap = new Map<string, ModalStep>()
+const selectMap = new Map<string, SelectStep>()
 
 for (const cmd of commands) {
     for (const step of cmd.steps) {
@@ -29,6 +30,9 @@ for (const cmd of commands) {
                 break
             case 'modal':
                 modalMap.set(step.id, step)
+                break
+            case 'select':
+                selectMap.set(step.id, step)
                 break
         }
     }
@@ -63,6 +67,8 @@ client.on('interactionCreate', async (interaction) => {
             await buttonMap.get(interaction.customId)?.run(interaction)
         } else if (interaction.isModalSubmit()) {
             await modalMap.get(interaction.customId)?.run(interaction)
+        } else if (interaction.isStringSelectMenu()) {
+            await selectMap.get(interaction.customId)?.run(interaction)
         }
     } catch (err) {
         console.error('[bot] Unhandled interaction error:', err)

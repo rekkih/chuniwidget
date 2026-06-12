@@ -2,6 +2,7 @@ import { eq, isNotNull } from 'drizzle-orm'
 import { db } from './db'
 import { loginAttempts, type User, users } from './db/schema'
 import { decryptSecret, encryptSecret } from './crypto'
+import type { DescriptionMode } from './discord/descriptionModes'
 
 export type { User }
 
@@ -27,6 +28,13 @@ export async function setUser(discordId: string, segaId: string, chuniToken: str
 export async function setExternalId(discordId: string, externalId: string): Promise<void> {
     await db.update(users)
         .set({ externalId })
+        .where(eq(users.discordId, discordId))
+}
+
+export async function setDescriptionMode(discordId: string, mode: DescriptionMode): Promise<void> {
+    // Force a stale lastSyncedAt so the next periodic pass re-pushes the widget with the new mode.
+    await db.update(users)
+        .set({descriptionMode: mode, lastSyncedAt: new Date('2026-01-01T00:00:00Z')})
         .where(eq(users.discordId, discordId))
 }
 

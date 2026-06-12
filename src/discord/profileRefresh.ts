@@ -3,6 +3,7 @@ import {getAllLinkedUsers, recordSync, SYNC_COOLDOWN_MS} from '@/store'
 import {fetchProfile} from '@/chunithm-net'
 import {parseJstDate} from '@/utils'
 import {pushProfile} from './profilePush'
+import type {DescriptionMode} from './descriptionModes'
 
 const ONE_HOUR_MS = 60 * 60 * 1000
 const ONE_DAY_MS = 24 * ONE_HOUR_MS
@@ -42,7 +43,7 @@ export async function syncUser(user: User, force = false): Promise<SyncResult> {
     try {
         const now = new Date()
         const profile = await fetchProfile(user.chuniToken)
-        await pushProfile(user.discordId, user.externalId, profile)
+        await pushProfile(user.discordId, user.externalId, profile, user.descriptionMode as DescriptionMode)
         const lastPlayedAt = parseJstDate(profile.lastPlayDate)
         await recordSync(user.discordId, now, lastPlayedAt)
         return {status: 'ok', profile: {name: profile.name, rating: profile.rating}}
