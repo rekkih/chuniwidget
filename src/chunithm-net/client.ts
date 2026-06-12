@@ -1,3 +1,5 @@
+import { debugLog } from '@/utils'
+
 const CHUNI_BASE     = 'https://chunithm-net-eng.com'
 const SEGA_AUTH_HOST = 'lng-tgk-aime-gw.am-all.net'
 const SEGA_AUTH_INIT =
@@ -77,11 +79,15 @@ export class ChuniClient {
             redirect: 'follow',
         })
 
+        debugLog(`getPage ${path}: ${res.status}, final url ${res.url}`)
+
         if (new URL(res.url).hostname === SEGA_AUTH_HOST) {
+            debugLog(`getPage ${path}: bounced to auth host, re-exchanging clal`)
             this._cookies = await exchangeClalForSession(this.clal)
             const retry = await fetch(`${CHUNI_BASE}${path}`, {
                 headers: { Cookie: cookiesAsHeader(this._cookies) },
             })
+            debugLog(`getPage ${path}: retry ${retry.status}, final url ${retry.url}`)
             return retry.text()
         }
 

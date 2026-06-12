@@ -1,6 +1,7 @@
 import { parse } from 'node-html-parser'
 import { ChuniClient } from './client'
 import { qs } from './dom'
+import { debugLog } from '@/utils'
 
 export interface PlayerProfile {
     name: string
@@ -66,6 +67,15 @@ export async function fetchProfile(clal: string): Promise<PlayerProfile> {
         client.getPage('/mobile/home/playerData'),
         client.getPage('/mobile/collection'),
     ])
-    const characterUrl = parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src') || ''
-    return { ...parseProfile(html), characterImageUrl: characterUrl }
+
+    debugLog(`fetchProfile: playerData ${html.length} bytes, collection ${characterHTML.length} bytes`)
+    debugLog('fetchProfile: playerData head:', html.slice(0, 300).replace(/\s+/g, ' '))
+
+    const profile = { ...parseProfile(html), characterImageUrl: parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src') || '' }
+
+    if (!profile.name && !profile.lastPlayDate) {
+        debugLog('fetchProfile: empty profile parsed (likely unauthenticated or region-blocked page)')
+    }
+
+    return profile
 }

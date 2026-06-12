@@ -1,18 +1,17 @@
-function parseDateString(dateString: string): Date {
+function parseDateString(dateString: string): Date | null {
     const [datePart, timePart] = dateString.split(' ')
-    if (!datePart || !timePart) {
-        throw new Error(`Invalid date format: ${dateString}. Expected YYYY/MM/DD HH:MM`)
-    }
+    if (!datePart || !timePart) return null
     const [year, month, day] = datePart.split('/').map(Number)
     const [hours, minutes] = timePart.split(':').map(Number)
-    if ([year, month, day, hours, minutes].some(isNaN)) {
-        throw new Error(`Invalid date format: ${dateString}. Expected YYYY/MM/DD HH:MM`)
-    }
+    if ([year, month, day, hours, minutes].some(isNaN)) return null
     return new Date(year, month - 1, day, hours, minutes)
 }
 
 export function formatRelativeTime(dateString: string): string {
-    const diffMs = Date.now() - parseDateString(dateString).getTime()
+    const parsed = parseDateString(dateString)
+    if (!parsed) return 'Never'
+
+    const diffMs = Date.now() - parsed.getTime()
     if (diffMs < 0) return 'just now'
 
     const diffMinutes = Math.floor(diffMs / (1000 * 60))
