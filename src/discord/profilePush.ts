@@ -36,7 +36,7 @@ export async function pushProfile(
 
     const classLv = numToRoman(Number(profile.classImage.split('_').at(-1)?.split('.')[0]))
 
-    const description = `${profile.title ?? 'NEW COMER'}\n${profile.teamName}`
+    const description = `${profile.title ?? 'NEW COMER'}`
 
     const dynamic: DynamicField[] = [
         text('name', profile.name || segaId),
