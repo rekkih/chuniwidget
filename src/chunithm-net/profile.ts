@@ -84,7 +84,7 @@ export async function fetchProfile(clal: string, convertWidth = false): Promise<
     debugLog(`fetchProfile: playerData ${html.length} bytes, collection ${characterHTML.length} bytes`)
     debugLog('fetchProfile: playerData head:', html.slice(0, 300).replace(/\s+/g, ' '))
 
-    const parsed = {...parseProfile(html), characterImageUrl: parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src') || ''}
+    const parsed = {...parseProfile(html), characterImageUrl: absoluteUrl(parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src')) || ''}
     const profile = convertWidth ? normalizeWidth(parsed) : parsed
 
     if (!profile.name && !profile.lastPlayDate) {
