@@ -1,14 +1,7 @@
-function parseDateString(dateString: string): Date | null {
-    const [datePart, timePart] = dateString.split(' ')
-    if (!datePart || !timePart) return null
-    const [year, month, day] = datePart.split('/').map(Number)
-    const [hours, minutes] = timePart.split(':').map(Number)
-    if ([year, month, day, hours, minutes].some(isNaN)) return null
-    return new Date(year, month - 1, day, hours, minutes)
-}
+import { parseJstDate } from './parseJstDate'
 
 export function formatRelativeTime(dateString: string): string {
-    const parsed = parseDateString(dateString)
+    const parsed = parseJstDate(dateString)
     if (!parsed) return 'Never'
 
     const diffMs = Date.now() - parsed.getTime()

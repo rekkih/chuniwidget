@@ -1,6 +1,7 @@
 import type {User} from '@/store'
 import {getAllLinkedUsers, recordSync, SYNC_COOLDOWN_MS} from '@/store'
 import {fetchProfile} from '@/chunithm-net'
+import {parseJstDate} from '@/utils'
 import {pushProfile} from './profilePush'
 
 const ONE_HOUR_MS = 60 * 60 * 1000
@@ -11,12 +12,6 @@ export type SyncResult =
     | { status: 'cooldown'; nextSyncAt: Date }
     | { status: 'not_linked' }
     | { status: 'error'; error: unknown }
-
-function parseLastPlayDate(str: string): Date | null {
-    // YYYY/MM/DD HH:MM
-    const date = str.match(/^(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})$/)
-    return date ? new Date(+date[1], +date[2] - 1, +date[3], +date[4], +date[5]) : null
-}
 
 export function computeSyncInterval(lastPlayedAt: Date | null): number {
     if (!lastPlayedAt) return ONE_DAY_MS
