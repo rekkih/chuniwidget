@@ -114,7 +114,6 @@ export function startOAuthServer(client: Client): void {
                                 name: 'add-chunithm-widget.js',
                             }],
                         })
-                        await new Promise(resolve => setTimeout(resolve, 10000))
                         await dmUser.send({
                             content: [
                                 'I\'ll keep watch of your CHUNITHM profile and automatically update after every few sets. However, the more you play in a day, the longer I\'ll wait as to not overload the servers.',
