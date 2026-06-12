@@ -62,11 +62,11 @@ export function parseProfile(html: string): PlayerProfile {
 }
 
 export async function fetchProfile(clal: string): Promise<PlayerProfile> {
+    // CHUNITHM-NET rotates its session token per request and only tolerates
+    // sequential navigation; concurrent requests bounce one page to /mobile/error/.
     const client = new ChuniClient(clal)
-    const [html, characterHTML] = await Promise.all([
-        client.getPage('/mobile/home/playerData'),
-        client.getPage('/mobile/collection'),
-    ])
+    const html = await client.getPage('/mobile/home/playerData')
+    const characterHTML = await client.getPage('/mobile/collection')
 
     debugLog(`fetchProfile: playerData ${html.length} bytes, collection ${characterHTML.length} bytes`)
     debugLog('fetchProfile: playerData head:', html.slice(0, 300).replace(/\s+/g, ' '))
