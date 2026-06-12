@@ -1,6 +1,6 @@
 import type {PlayerProfile} from '@/chunithm-net'
 
-export type DescriptionMode = 'title' | 'team' | 'team_title'
+export type DescriptionMode = 'title' | 'team' | 'team_title' | 'none'
 
 export const DEFAULT_DESCRIPTION_MODE: DescriptionMode = 'title'
 
@@ -13,6 +13,7 @@ export const DESCRIPTION_MODES: Record<DescriptionMode, {
     title: {label: 'Title', description: 'Your title', build: p => p.title || 'NEW COMER'},
     team: {label: 'Team', description: 'Your team name', build: p => p.teamName || 'NO TEAM'},
     team_title: {label: 'Team + Title', description: 'Team name and title', build: p => [p.teamName, p.title].filter(Boolean).join(' · ') || 'NEW COMER'},
+    none: {label: 'None', description: 'Hide the description', build: () => ''},
 }
 
 export function isDescriptionMode(v: string): v is DescriptionMode {

@@ -42,7 +42,7 @@ export async function pushProfile(
 
     const dynamic: DynamicField[] = [
         text('name', profile.name || segaId),
-        text('sub01', description),
+        ...(description ? [text('sub01', description)] : []),
 
         img('primary_image', bannerUrl),
         img('preview_icon', iconUrl),
