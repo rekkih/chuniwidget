@@ -5,14 +5,15 @@ import {
     StringSelectMenuBuilder,
 } from 'discord.js'
 import type {BotCommand} from '../types'
-import {getUser, setDescriptionMode} from '../store'
+import {getUser, setConvertWidth, setDescriptionMode} from '../store'
 import {DESCRIPTION_MODES, isDescriptionMode, type DescriptionMode} from '../discord/descriptionModes'
 
-const SELECT_ID = 'config:description'
+const DESCRIPTION_ID = 'config:description'
+const WIDTH_ID = 'config:width'
 
-function buildMenu(current: DescriptionMode): ActionRowBuilder<StringSelectMenuBuilder> {
+function descriptionMenu(current: DescriptionMode): ActionRowBuilder<StringSelectMenuBuilder> {
     const menu = new StringSelectMenuBuilder()
-        .setCustomId(SELECT_ID)
+        .setCustomId(DESCRIPTION_ID)
         .setPlaceholder('What should your profile show?')
         .addOptions(
             (Object.entries(DESCRIPTION_MODES) as [DescriptionMode, (typeof DESCRIPTION_MODES)[DescriptionMode]][])
@@ -22,6 +23,17 @@ function buildMenu(current: DescriptionMode): ActionRowBuilder<StringSelectMenuB
                     description,
                     default: value === current,
                 })),
+        )
+    return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)
+}
+
+function widthMenu(current: boolean): ActionRowBuilder<StringSelectMenuBuilder> {
+    const menu = new StringSelectMenuBuilder()
+        .setCustomId(WIDTH_ID)
+        .setPlaceholder('Convert full-width characters?')
+        .addOptions(
+            {value: 'on', label: 'Convert full-width', description: 'Fold ＦＵＬＬＷＩＤＴＨ text to normal width', default: current},
+            {value: 'off', label: 'Keep as-is', description: 'Show names and titles exactly as set in-game', default: !current},
         )
     return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)
 }
@@ -47,14 +59,14 @@ export const configCommand: BotCommand = {
                 const current = isDescriptionMode(user.descriptionMode) ? user.descriptionMode : 'title'
                 await interaction.reply({
                     flags: MessageFlagsBitField.Flags.Ephemeral,
-                    content: 'Choose what to display under your name on your Discord profile widget:',
-                    components: [buildMenu(current)],
+                    content: 'Configure your CHUNITHM profile widget:',
+                    components: [descriptionMenu(current), widthMenu(user.convertWidth)],
                 })
             },
         },
         {
             type: 'select',
-            id: SELECT_ID,
+            id: DESCRIPTION_ID,
             async run(interaction) {
                 const choice = interaction.values[0]
                 if (!choice || !isDescriptionMode(choice)) {
@@ -66,9 +78,23 @@ export const configCommand: BotCommand = {
                 }
 
                 await setDescriptionMode(interaction.user.id, choice)
-                await interaction.update({
+                await interaction.reply({
+                    flags: MessageFlagsBitField.Flags.Ephemeral,
                     content: `Done! Your profile will now show **${DESCRIPTION_MODES[choice].label}**. The widget updates within a minute.`,
-                    components: [],
+                })
+            },
+        },
+        {
+            type: 'select',
+            id: WIDTH_ID,
+            async run(interaction) {
+                const convert = interaction.values[0] === 'on'
+                await setConvertWidth(interaction.user.id, convert)
+                await interaction.reply({
+                    flags: MessageFlagsBitField.Flags.Ephemeral,
+                    content: convert
+                        ? 'Done! Full-width characters will be converted to normal width. The widget updates within a minute.'
+                        : 'Done! Names and titles will be shown exactly as set in-game. The widget updates within a minute.',
                 })
             },
         },

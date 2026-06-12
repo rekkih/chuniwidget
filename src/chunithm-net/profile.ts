@@ -1,7 +1,7 @@
 import {parse} from 'node-html-parser'
 import {ChuniClient} from './client'
 import {qs} from './dom'
-import {debugLog} from '@/utils'
+import {debugLog, toHalfWidth} from '@/utils'
 
 export interface PlayerProfile {
     name: string
@@ -63,7 +63,18 @@ export function parseProfile(html: string): PlayerProfile {
     }
 }
 
-export async function fetchProfile(clal: string): Promise<PlayerProfile> {
+// Player-entered text (name, title, team) often uses full-width glyphs that look
+// oversized on Discord. Optionally fold them back to half-width.
+function normalizeWidth(p: PlayerProfile): PlayerProfile {
+    return {
+        ...p,
+        name: toHalfWidth(p.name),
+        title: toHalfWidth(p.title),
+        teamName: toHalfWidth(p.teamName),
+    }
+}
+
+export async function fetchProfile(clal: string, convertWidth = false): Promise<PlayerProfile> {
     // CHUNITHM-NET rotates its session token per request and only tolerates
     // sequential navigation; concurrent requests bounce one page to /mobile/error/.
     const client = new ChuniClient(clal)
@@ -73,7 +84,8 @@ export async function fetchProfile(clal: string): Promise<PlayerProfile> {
     debugLog(`fetchProfile: playerData ${html.length} bytes, collection ${characterHTML.length} bytes`)
     debugLog('fetchProfile: playerData head:', html.slice(0, 300).replace(/\s+/g, ' '))
 
-    const profile = {...parseProfile(html), characterImageUrl: parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src') || ''}
+    const parsed = {...parseProfile(html), characterImageUrl: parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src') || ''}
+    const profile = convertWidth ? normalizeWidth(parsed) : parsed
 
     if (!profile.name && !profile.lastPlayDate) {
         debugLog('fetchProfile: empty profile parsed (likely unauthenticated or region-blocked page)')

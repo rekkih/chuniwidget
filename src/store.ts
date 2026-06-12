@@ -38,6 +38,13 @@ export async function setDescriptionMode(discordId: string, mode: DescriptionMod
         .where(eq(users.discordId, discordId))
 }
 
+export async function setConvertWidth(discordId: string, convertWidth: boolean): Promise<void> {
+    // Force a stale lastSyncedAt so the next periodic pass re-pushes the widget with the new setting.
+    await db.update(users)
+        .set({convertWidth, lastSyncedAt: new Date('2026-01-01T00:00:00Z')})
+        .where(eq(users.discordId, discordId))
+}
+
 export async function getUser(discordId: string): Promise<User | undefined> {
     const rows = await db.select()
         .from(users)

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "convert_width" boolean DEFAULT true NOT NULL;

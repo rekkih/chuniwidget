@@ -94,7 +94,7 @@ export function startOAuthServer(client: Client): void {
                 const user = await getUser(discordUserId)
                 if (user) {
                     const externalId = user.externalId ?? user.segaId
-                    const profile = await fetchProfile(user.chuniToken)
+                    const profile = await fetchProfile(user.chuniToken, user.convertWidth)
                     await pushProfile(resolvedId, externalId, profile, user.descriptionMode as DescriptionMode)
                     await setExternalId(resolvedId, externalId)
 

@@ -1,4 +1,4 @@
-import { integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
     discordId: text('discord_id').primaryKey(),
@@ -6,6 +6,7 @@ export const users = pgTable('users', {
     externalId: text('external_id'),
     chuniToken: text('chuni_token').notNull(),
     descriptionMode: text('description_mode').notNull().default('title'),
+    convertWidth: boolean('convert_width').notNull().default(true),
     linkedAt: timestamp('linked_at', {withTimezone: true}).notNull().defaultNow(),
     lastSyncedAt: timestamp('last_synced_at', {withTimezone: true}),
     lastPlayedAt: timestamp('last_played_at', {withTimezone: true}),

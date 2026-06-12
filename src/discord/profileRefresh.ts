@@ -42,7 +42,7 @@ export async function syncUser(user: User, force = false): Promise<SyncResult> {
 
     try {
         const now = new Date()
-        const profile = await fetchProfile(user.chuniToken)
+        const profile = await fetchProfile(user.chuniToken, user.convertWidth)
         await pushProfile(user.discordId, user.externalId, profile, user.descriptionMode as DescriptionMode)
         const lastPlayedAt = parseJstDate(profile.lastPlayDate)
         await recordSync(user.discordId, now, lastPlayedAt)

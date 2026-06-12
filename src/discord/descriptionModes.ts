@@ -13,7 +13,7 @@ export const DESCRIPTION_MODES: Record<DescriptionMode, {
     title: {label: 'Title', description: 'Your title', build: p => p.title || 'NEW COMER'},
     team: {label: 'Team', description: 'Your team name', build: p => p.teamName || 'NO TEAM'},
     team_title: {label: 'Team + Title', description: 'Team name and title', build: p => [p.teamName, p.title].filter(Boolean).join(' · ') || 'NEW COMER'},
-    none: {label: 'None', description: 'Hide the description', build: () => ''},
+    none: {label: 'None', description: 'Hide the description', build: () => ' '},
 }
 
 export function isDescriptionMode(v: string): v is DescriptionMode {
