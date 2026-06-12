@@ -36,7 +36,7 @@ function parseRatingImages(srcs: string[]): string {
 
 function absoluteUrl(src: string | undefined | null): string | null {
     if (!src) return null
-    return src.replace('chunithm-net-eng.com/', 'empty-brook-f048.rekkisomo.workers.dev/360/240/')
+    return src.replace('chunithm-net-eng.com/', 'chuwidgetimg.rek.lol/360/240/')
 }
 
 export function parseProfile(html: string): PlayerProfile {
