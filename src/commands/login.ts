@@ -229,7 +229,7 @@ export const loginCommand: BotCommand = {
                         '',
                         'The permissions requested cannot be customised by us - Discord force sets these permissions when linking a game profile (the specific scope is `sdk.social_layer`).',
                         '',
-                        'Yakuon does not utilise the SDK other than for adding a game widget - we read/use nothing else. This is stated in our [Privacy Policy](<https://rekkih.notion.site/Privacy-Policy-for-Yakuon-ea54dd700ae148759505a506e7a0bfe2>)',
+                        'Yakuon does not utilise the SDK other than for adding a game widget - we read/use nothing else. This is stated in our [Privacy Policy](<https://yakuon.notion.site/Privacy-Policy-for-Yakuon-ea54dd700ae148759505a506e7a0bfe2>)',
                     ].join('\n'),
                     components: [
                         new ActionRowBuilder<ButtonBuilder>().addComponents(
