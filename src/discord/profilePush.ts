@@ -58,7 +58,7 @@ export async function pushProfile(
         ...stat(3, profile.playerLevel, 'Lv'),
 
         text('f4', classLv ?? '0'),
-        img('f4i', profile.classImage.replace('chunithm-net-eng.com/', 'chuwidgetimg.rek.lol/18/18/')),
+        img('f4i', profile.classImage.replace('chunithm-net-eng.com/', 'chuwidgetimg.rek.lol/18/18/1/')),
         text('f4l', 'Class'),
 
         ...stat(5, formatRelativeTime(profile.lastPlayDate), 'Last Play')
