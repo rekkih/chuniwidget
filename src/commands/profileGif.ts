@@ -31,7 +31,7 @@ export const profileGifCommand: BotCommand = {
                 await mkdir(tmpDir, { recursive: true })
 
                 try {
-                    const browser = await puppeteer.launch({ headless: true })
+                    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] })
                     try {
                         const page = await browser.newPage()
                         await page.setViewport({ width: 552, height: 900, deviceScaleFactor: 2 })
