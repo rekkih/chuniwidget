@@ -2,6 +2,7 @@ import { MaimaiClient } from './client'
 import { fetchPlayerData, type PlayerData, fetchPlayerMetadata, type PlayerMetadata, fetchPlayerRecords, type PlayerRecords } from './fetchers/playerData'
 import { getUser } from '@/store'
 import { SegaActor, invalidateActorCache, type SelectQuery, type SelectResult } from '@/sega'
+import { computeSyncInterval, parseJstDate } from '@/utils'
 
 // --- Data shape ---
 
@@ -22,6 +23,10 @@ class MaimaiActor extends SegaActor<MaimaiClient, MaimaiData> {
 
     protected createClient(token: string): MaimaiClient {
         return new MaimaiClient(token)
+    }
+
+    protected computeTtl(data: Partial<MaimaiData>): number {
+        return computeSyncInterval(parseJstDate(data.records?.lastPlayDate ?? ''))
     }
 
     protected readonly fetchers = {
