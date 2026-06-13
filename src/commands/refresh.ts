@@ -1,7 +1,7 @@
 import {MessageFlagsBitField, SlashCommandBuilder} from 'discord.js'
-import type {BotCommand} from '../types'
-import {getUser} from '../store'
-import {computeSyncInterval} from '../discord/profileRefresh'
+import type {BotCommand} from '@/types'
+import {getUser} from '@/store'
+import {computeSyncInterval} from '@/utils'
 
 export const refreshCommand: BotCommand = {
     definition: new SlashCommandBuilder()

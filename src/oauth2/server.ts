@@ -3,7 +3,7 @@ import {consumeState} from './state'
 import {getUser, setExternalId} from '@/store'
 import {pushProfile} from '@/discord/profilePush'
 import type {DescriptionMode} from '@/discord/descriptionModes'
-import {fetchProfile} from '@/chunithm-net'
+import {CHUNITHM} from '@/chunithm-net'
 import {DISCORD_API} from '@/discord/client'
 
 const CONNECTED_PAGE = `<!DOCTYPE html>
@@ -94,8 +94,11 @@ export function startOAuthServer(client: Client): void {
                 const user = await getUser(discordUserId)
                 if (user) {
                     const externalId = user.externalId ?? user.segaId
-                    const profile = await fetchProfile(user.chuniToken, user.convertWidth)
-                    await pushProfile(resolvedId, externalId, profile, user.descriptionMode as DescriptionMode)
+                    const {profile, collection} = await CHUNITHM.actAs(user.discordId).select({
+                        profile: true,
+                        collection: true,
+                    })
+                    await pushProfile(resolvedId, externalId, {...profile, characterImageUrl: collection.characterUrl}, user.descriptionMode as DescriptionMode)
                     await setExternalId(resolvedId, externalId)
 
                     const snippet = buildSnippet(process.env.DISCORD_CLIENT_ID!)

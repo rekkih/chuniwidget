@@ -1,12 +1,10 @@
 import {parse} from 'node-html-parser'
-import {ChuniClient} from './client'
-import {qs} from './dom'
-import {debugLog, toHalfWidth} from '@/utils'
+import type {ChuniClient} from '../client'
+import {qs} from '../dom'
 
-export interface PlayerProfile {
+export interface PlayerData {
     name: string
     rating: string
-    characterImageUrl: string
     title: string
     playCount: number
     versionPlayCount: number
@@ -34,12 +32,12 @@ function parseRatingImages(srcs: string[]): string {
     return rating || '0.00'
 }
 
-function absoluteUrl(src: string | undefined | null): string | null {
+export function absoluteUrl(src: string | undefined | null): string | null {
     if (!src) return null
     return src.replace('chunithm-net-eng.com/', 'chuwidgetimg.rek.lol/360/263/1/')
 }
 
-export function parseProfile(html: string): PlayerProfile {
+export function parsePlayerData(html: string): PlayerData {
     const root = parse(html)
     const ratingImgSrcs = root
         .querySelectorAll('.player_rating_num_block img')
@@ -51,7 +49,6 @@ export function parseProfile(html: string): PlayerProfile {
     return {
         name: qs(root, '.player_name_in'),
         rating: parseRatingImages(ratingImgSrcs),
-        characterImageUrl: absoluteUrl(root.querySelector('.player_chara img')?.getAttribute('src')) || '',
         title: qs(root, '.player_honor_short', 'NEW COMER'),
         playCount,
         versionPlayCount,
@@ -59,37 +56,11 @@ export function parseProfile(html: string): PlayerProfile {
         classImage: root.querySelector('.player_classemblem_top img')?.getAttribute('src') || 'https://chunithm-net-eng.com/mobile/images/classemblem_medal_01.png',
         lastPlayDate: qs(root, '.player_lastplaydate_text'),
         playerLevel: qs(root, '.player_lv'),
-        teamName: qs(root, '.player_team_name')
+        teamName: qs(root, '.player_team_name'),
     }
 }
 
-// Player-entered text (name, title, team) often uses full-width glyphs that look
-// oversized on Discord. Optionally fold them back to half-width.
-function normalizeWidth(p: PlayerProfile): PlayerProfile {
-    return {
-        ...p,
-        name: toHalfWidth(p.name),
-        title: toHalfWidth(p.title),
-        teamName: toHalfWidth(p.teamName),
-    }
-}
-
-export async function fetchProfile(clal: string, convertWidth = false): Promise<PlayerProfile> {
-    // CHUNITHM-NET rotates its session token per request and only tolerates
-    // sequential navigation; concurrent requests bounce one page to /mobile/error/.
-    const client = new ChuniClient(clal)
+export async function fetchPlayerData(client: ChuniClient): Promise<PlayerData> {
     const html = await client.getPage('/mobile/home/playerData')
-    const characterHTML = await client.getPage('/mobile/collection')
-
-    debugLog(`fetchProfile: playerData ${html.length} bytes, collection ${characterHTML.length} bytes`)
-    debugLog('fetchProfile: playerData head:', html.slice(0, 300).replace(/\s+/g, ' '))
-
-    const parsed = {...parseProfile(html), characterImageUrl: absoluteUrl(parse(characterHTML).querySelector('.character_image_box img')?.getAttribute('src')) || ''}
-    const profile = convertWidth ? normalizeWidth(parsed) : parsed
-
-    if (!profile.name && !profile.lastPlayDate) {
-        debugLog('fetchProfile: empty profile parsed (likely unauthenticated or region-blocked page)')
-    }
-
-    return profile
+    return parsePlayerData(html)
 }

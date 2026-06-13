@@ -1,26 +1,15 @@
 import type {User} from '@/store'
-import {getAllLinkedUsers, recordSync, SYNC_COOLDOWN_MS} from '@/store'
-import {fetchProfile} from '@/chunithm-net'
-import {parseJstDate} from '@/utils'
+import {getAllLinkedUsers, recordSync} from '@/store'
+import {CHUNITHM} from '@/chunithm-net'
+import {parseJstDate, computeSyncInterval, SYNC_COOLDOWN_MS} from '@/utils'
 import {pushProfile} from './profilePush'
 import type {DescriptionMode} from './descriptionModes'
-
-const ONE_HOUR_MS = 60 * 60 * 1000
-const ONE_DAY_MS = 24 * ONE_HOUR_MS
 
 export type SyncResult =
     | { status: 'ok'; profile: { name: string; rating: string } }
     | { status: 'cooldown'; nextSyncAt: Date }
     | { status: 'not_linked' }
     | { status: 'error'; error: unknown }
-
-export function computeSyncInterval(lastPlayedAt: Date | null): number {
-    if (!lastPlayedAt) return ONE_DAY_MS
-    const elapsed = Date.now() - lastPlayedAt.getTime()
-    if (elapsed < ONE_HOUR_MS) return SYNC_COOLDOWN_MS
-    if (elapsed < ONE_DAY_MS) return ONE_HOUR_MS
-    return ONE_DAY_MS
-}
 
 function isDueForSync(user: User): boolean {
     if (!user.lastSyncedAt) return true
@@ -42,8 +31,16 @@ export async function syncUser(user: User, force = false): Promise<SyncResult> {
 
     try {
         const now = new Date()
-        const profile = await fetchProfile(user.chuniToken, user.convertWidth)
-        await pushProfile(user.discordId, user.externalId, profile, user.descriptionMode as DescriptionMode)
+        const {profile, collection} = await CHUNITHM.actAs(user.discordId).select(
+            {profile: true, collection: true},
+            {force},
+        )
+        await pushProfile(
+            user.discordId,
+            user.externalId,
+            {...profile, characterImageUrl: collection.characterUrl},
+            user.descriptionMode as DescriptionMode,
+        )
         const lastPlayedAt = parseJstDate(profile.lastPlayDate)
         await recordSync(user.discordId, now, lastPlayedAt)
         return {status: 'ok', profile: {name: profile.name, rating: profile.rating}}

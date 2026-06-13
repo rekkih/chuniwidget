@@ -6,8 +6,6 @@ import type { DescriptionMode } from './discord/descriptionModes'
 
 export type { User }
 
-export const SYNC_COOLDOWN_MS = 30 * 60 * 1000
-
 const LOGIN_WINDOW_MS = 10 * 60 * 1000
 const LOGIN_MAX_ATTEMPTS = 5
 

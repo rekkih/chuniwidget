@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "scripts": {
         "start": "bun src/index.ts",
+    "test": "bun test tests/",
         "setup-widget": "bun scripts/setupWidget.ts",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate"
