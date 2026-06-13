@@ -1,11 +1,11 @@
-import {ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlagsBitField, SlashCommandBuilder} from 'discord.js'
-import type {BotCommand} from '@/types'
-import {deleteUser, getUser} from '@/store'
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlagsBitField, SlashCommandBuilder } from 'discord.js'
+import type { BotCommand } from '@/types'
+import { deleteUser, getUser } from '@/store'
 
 export const unlinkCommand: BotCommand = {
     definition: new SlashCommandBuilder()
         .setName('logout')
-        .setDescription('Remove your SEGA ID link and delete all your data from Yakuon'),
+        .setDescription('Remove your SEGA ID link and delete all your data from the bot'),
 
     steps: [
         {
@@ -24,7 +24,7 @@ export const unlinkCommand: BotCommand = {
                     flags: MessageFlagsBitField.Flags.Ephemeral,
                     content: [
                         '**Are you sure you want to logout?**',
-                        'This will delete all your data from Yakuon. Also go to **Discord Settings -> Connections** and remove **Yakuon** from the list to fully disconnect.',
+                        `This will remove your data from ${process.env.BOT_NAME} and log out of ${existing.segaId}?`
                     ].join('\n'),
                     components: [
                         new ActionRowBuilder<ButtonBuilder>().addComponents(

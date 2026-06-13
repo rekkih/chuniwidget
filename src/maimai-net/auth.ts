@@ -2,10 +2,10 @@ import { login as segaLogin, SegaAuthConfig } from '@/sega/auth'
 import { LoginFailureError, OtpRequiredError, InvalidOtpError } from '@/sega/errors'
 
 const config: SegaAuthConfig = {
-    siteId: 'chuniex',
-    redirectUrl: 'https://chunithm-net-eng.com/mobile/',
-    backUrl: 'https://chunithm.sega.com/',
-    targetHostname: 'chunithm-net-eng.com',
+    siteId: 'maimaidxex',
+    redirectUrl: 'https://maimaidx-eng.com/maimai-mobile/',
+    backUrl: 'https://maimai.sega.com/',
+    targetHostname: 'maimaidx-eng.com',
 }
 
 export { LoginFailureError, OtpRequiredError, InvalidOtpError }

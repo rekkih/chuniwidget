@@ -2,7 +2,7 @@ import { eq, isNotNull } from 'drizzle-orm'
 import { db } from './db'
 import { loginAttempts, type User, users } from './db/schema'
 import { decryptSecret, encryptSecret } from './crypto'
-import type { DescriptionMode } from './discord/descriptionModes'
+
 
 export type { User }
 
@@ -19,7 +19,7 @@ export async function setUser(discordId: string, segaId: string, chuniToken: str
         .values({ discordId, segaId, chuniToken: encrypted })
         .onConflictDoUpdate({
             target: users.discordId,
-            set: { segaId, chuniToken: encrypted, externalId: null, linkedAt: new Date() },
+            set: { segaId, chuniToken: encrypted, externalId: null, linkedAt: new Date(), syncPaused: false },
         })
 }
 
@@ -29,17 +29,17 @@ export async function setExternalId(discordId: string, externalId: string): Prom
         .where(eq(users.discordId, discordId))
 }
 
-export async function setDescriptionMode(discordId: string, mode: DescriptionMode): Promise<void> {
+export async function setDescriptionMode(discordId: string, mode: string): Promise<void> {
     // Force a stale lastSyncedAt so the next periodic pass re-pushes the widget with the new mode.
     await db.update(users)
-        .set({descriptionMode: mode, lastSyncedAt: new Date('2026-01-01T00:00:00Z')})
+        .set({ descriptionMode: mode, lastSyncedAt: new Date('2026-01-01T00:00:00Z') })
         .where(eq(users.discordId, discordId))
 }
 
 export async function setConvertWidth(discordId: string, convertWidth: boolean): Promise<void> {
     // Force a stale lastSyncedAt so the next periodic pass re-pushes the widget with the new setting.
     await db.update(users)
-        .set({convertWidth, lastSyncedAt: new Date('2026-01-01T00:00:00Z')})
+        .set({ convertWidth, lastSyncedAt: new Date('2026-01-01T00:00:00Z') })
         .where(eq(users.discordId, discordId))
 }
 
@@ -96,6 +96,12 @@ export async function checkAndRecordLoginAttempt(
             .where(eq(loginAttempts.discordId, discordId))
         return { allowed: true }
     })
+}
+
+export async function pauseSync(discordId: string): Promise<void> {
+    await db.update(users)
+        .set({ syncPaused: true })
+        .where(eq(users.discordId, discordId))
 }
 
 export async function deleteUser(discordId: string): Promise<void> {

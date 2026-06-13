@@ -1,45 +1,23 @@
-import {ChuniClient} from './client'
-import {fetchPlayerData, type PlayerData} from './fetchers/playerData'
-import {fetchCollection, type CollectionData} from './fetchers/collection'
-import {fetchCustomise, type CustomiseData} from './fetchers/customise'
-import {getUser} from '@/store'
-import {toHalfWidth, computeSyncInterval, parseJstDate, debugLog} from '@/utils'
+import { ChuniClient } from './client'
+import { fetchPlayerData, type PlayerData } from './fetchers/playerData'
+import { fetchCollection, type CollectionData } from './fetchers/collection'
+import { fetchCustomise, type CustomiseData } from './fetchers/customise'
+import { getUser } from '@/store'
+import { toHalfWidth, computeSyncInterval, parseJstDate } from '@/utils'
+import { SegaActor, invalidateActorCache, type SelectQuery, type SelectResult } from '@/sega'
 
-// --- Types ---
+// --- Data shape ---
 
-type FieldSelection<T> = true | {[K in keyof T]?: true}
-
-type ResolveSelection<T, S extends FieldSelection<T>> = S extends true
-    ? T
-    : {[K in keyof S as S[K] extends true ? K : never]: K extends keyof T ? T[K] : never}
-
-export interface SelectQuery {
-    profile?: FieldSelection<PlayerData>
-    collection?: FieldSelection<CollectionData>
-    customise?: FieldSelection<CustomiseData>
+interface ChuniData {
+    profile: PlayerData
+    collection: CollectionData
+    customise: CustomiseData
 }
 
-export type SelectResult<Q extends SelectQuery> =
-    (Q extends {profile: FieldSelection<PlayerData>} ? {profile: ResolveSelection<PlayerData, Q['profile']>} : Record<never, never>) &
-    (Q extends {collection: FieldSelection<CollectionData>} ? {collection: ResolveSelection<CollectionData, Q['collection']>} : Record<never, never>) &
-    (Q extends {customise: FieldSelection<CustomiseData>} ? {customise: ResolveSelection<CustomiseData, Q['customise']>} : Record<never, never>)
+// --- Re-exports for consumers ---
 
-export type PlayerProfile = PlayerData & {characterImageUrl: string}
-
-// --- Cache ---
-
-interface CacheEntry {
-    playerData?: PlayerData
-    collection?: CollectionData
-    customise?: CustomiseData
-    expiresAt: number
-}
-
-const profileCache = new Map<string, CacheEntry>()
-
-export function invalidateChuniCache(discordId: string): void {
-    profileCache.delete(discordId)
-}
+export type { SelectQuery, SelectResult }
+export type PlayerProfile = PlayerData & { characterImageUrl: string }
 
 // --- Helpers ---
 
@@ -52,91 +30,47 @@ function normalizeWidth(p: PlayerData): PlayerData {
     }
 }
 
-function pickFields<T extends object, S extends FieldSelection<T>>(data: T, selection: S): ResolveSelection<T, S> {
-    if (selection === true) return data as ResolveSelection<T, S>
-    const result: Partial<T> = {}
-    for (const key of Object.keys(selection) as (keyof T)[]) {
-        if ((selection as Record<keyof T, boolean | undefined>)[key]) {
-            result[key] = data[key]
-        }
-    }
-    return result as ResolveSelection<T, S>
-}
-
 // --- Actor ---
 
-export class ChuniActor {
-    private _client: ChuniClient | null = null
+class ChuniActor extends SegaActor<ChuniClient, ChuniData> {
+    private _convertWidth = false
 
-    constructor(private readonly discordId: string) {}
+    constructor(private readonly discordId: string) { super() }
 
-    async select<Q extends SelectQuery>(query: Q, opts?: {force?: boolean}): Promise<SelectResult<Q>> {
+    protected createClient(token: string): ChuniClient {
+        return new ChuniClient(token)
+    }
+
+    protected readonly fetchers = {
+        profile: fetchPlayerData,
+        collection: fetchCollection,
+        customise: fetchCustomise,
+    }
+
+    protected computeTtl(data: Partial<ChuniData>): number {
+        return computeSyncInterval(parseJstDate(data.profile?.lastPlayDate ?? ''))
+    }
+
+    protected transform(data: Partial<ChuniData>): Partial<ChuniData> {
+        if (this._convertWidth && data.profile) {
+            return { ...data, profile: normalizeWidth(data.profile) }
+        }
+        return data
+    }
+
+    async select<Q extends SelectQuery<ChuniData>>(query: Q, opts?: { force?: boolean }): Promise<SelectResult<ChuniData, Q>> {
         const user = await getUser(this.discordId)
         if (!user) throw new Error(`No user found for discordId ${this.discordId}`)
-
-        const needsProfile = 'profile' in query
-        const needsCollection = 'collection' in query
-        const needsCustomise = 'customise' in query
-
-        const now = Date.now()
-        const cached = profileCache.get(this.discordId)
-        const cacheAlive = !opts?.force && !!cached && cached.expiresAt > now
-
-        const mustFetchPlayerData = needsProfile && !(cacheAlive && cached!.playerData)
-        const mustFetchCollection = needsCollection && !(cacheAlive && cached!.collection)
-        const mustFetchCustomise = needsCustomise && !(cacheAlive && cached!.customise)
-
-        let playerData = cached?.playerData
-        let collection = cached?.collection
-        let customise = cached?.customise
-
-        if (mustFetchPlayerData || mustFetchCollection || mustFetchCustomise) {
-            this._client ??= new ChuniClient(user.chuniToken)
-
-            // CHUNITHM-NET requires sequential requests; concurrent fetches get bounced.
-            if (mustFetchPlayerData) {
-                playerData = await fetchPlayerData(this._client)
-                debugLog(`chuni.select: fetched playerData for ${this.discordId}`)
-            }
-            if (mustFetchCollection) {
-                collection = await fetchCollection(this._client)
-                debugLog(`chuni.select: fetched collection for ${this.discordId}`)
-            }
-            if (mustFetchCustomise) {
-                customise = await fetchCustomise(this._client)
-                debugLog(`chuni.select: fetched customise for ${this.discordId}`)
-            }
-
-            const ttl = computeSyncInterval(parseJstDate(playerData?.lastPlayDate ?? ''))
-            profileCache.set(this.discordId, {
-                playerData: playerData ?? cached?.playerData,
-                collection: collection ?? cached?.collection,
-                customise: customise ?? cached?.customise,
-                expiresAt: now + ttl,
-            })
-        } else {
-            debugLog(`chuni.select: cache hit for ${this.discordId}`)
-        }
-
-        const resolvedPlayerData = playerData
-            ? (user.convertWidth ? normalizeWidth(playerData) : playerData)
-            : undefined
-
-        const result: Partial<SelectResult<Q>> = {}
-        if (needsProfile && resolvedPlayerData) {
-            (result as Record<string, unknown>)['profile'] = pickFields(resolvedPlayerData, query.profile!)
-        }
-        if (needsCollection && collection) {
-            (result as Record<string, unknown>)['collection'] = pickFields(collection, query.collection!)
-        }
-        if (needsCustomise && customise) {
-            (result as Record<string, unknown>)['customise'] = pickFields(customise, query.customise!)
-        }
-        return result as SelectResult<Q>
+        this._convertWidth = !!user.convertWidth
+        return this.doSelect(query, this.discordId, user.chuniToken, opts)
     }
 }
 
 // --- Public API ---
+
+export function invalidateChuniCache(discordId: string): void {
+    invalidateActorCache(ChuniActor, discordId)
+}
 
 export const CHUNITHM = {
     actAs(discordId: string): ChuniActor {

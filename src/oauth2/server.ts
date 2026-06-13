@@ -1,10 +1,8 @@
-import {Client} from 'discord.js'
-import {consumeState} from './state'
-import {getUser, setExternalId} from '@/store'
-import {pushProfile} from '@/discord/profilePush'
-import type {DescriptionMode} from '@/discord/descriptionModes'
-import {CHUNITHM} from '@/chunithm-net'
-import {DISCORD_API} from '@/discord/client'
+import { Client } from 'discord.js'
+import { consumeState } from './state'
+import { getUser, setExternalId } from '@/store'
+import type { User } from '@/store'
+import { DISCORD_API } from '@/discord/common/client'
 
 const CONNECTED_PAGE = `<!DOCTYPE html>
 <html lang="en">
@@ -27,18 +25,26 @@ const CONNECTED_PAGE = `<!DOCTYPE html>
 </body>
 </html>`
 
-const SNIPPET_TEMPLATE = await Bun.file(
-    new URL('../../scripts/add-chunithm-widget.js', import.meta.url),
-).text()
+export interface OAuthCallbackConfig {
+    /** Game display name used in DM messages, e.g. "CHUNITHM" or "maimai DX" */
+    gameName: string
+    /** Filename for the widget installer snippet attachment */
+    scriptFilename: string
+    /** Fetch the player's profile from the game net and push it to Discord */
+    fetchAndPush(user: User, resolvedId: string, externalId: string): Promise<void>
+}
 
-export function buildSnippet(appId: string): string {
-    return SNIPPET_TEMPLATE.replace('"{{APP_ID}}"', JSON.stringify(appId))
+export async function buildSnippet(appId: string, scriptFilename: string): Promise<string> {
+    const template = await Bun.file(
+        new URL(`../../scripts/${scriptFilename}`, import.meta.url),
+    ).text()
+    return template.replace('"{{APP_ID}}"', JSON.stringify(appId))
 }
 
 async function exchangeCode(code: string): Promise<{ accessToken: string; discordUserId: string }> {
     const res = await fetch(`${DISCORD_API}/oauth2/token`, {
         method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
             client_id: process.env.DISCORD_CLIENT_ID!,
             client_secret: process.env.DISCORD_CLIENT_SECRET!,
@@ -51,16 +57,16 @@ async function exchangeCode(code: string): Promise<{ accessToken: string; discor
     const data = await res.json() as { access_token: string }
 
     const meRes = await fetch(`${DISCORD_API}/oauth2/@me`, {
-        headers: {Authorization: `Bearer ${data.access_token}`},
+        headers: { Authorization: `Bearer ${data.access_token}` },
     })
     if (!meRes.ok) throw new Error(`Could not resolve user from token: ${await meRes.text()}`)
     const me = await meRes.json() as { user: { id: string } }
 
-    return {accessToken: data.access_token, discordUserId: me.user.id}
+    return { accessToken: data.access_token, discordUserId: me.user.id }
 }
 
 
-export function startOAuthServer(client: Client): void {
+export function startOAuthServer(client: Client, cfg: OAuthCallbackConfig): void {
     const port = Number(process.env.OAUTH2_PORT ?? 3001)
 
     Bun.serve({
@@ -68,7 +74,7 @@ export function startOAuthServer(client: Client): void {
         async fetch(req) {
             const url = new URL(req.url)
             if (url.pathname !== '/oauth2/callback') {
-                return new Response('Not found', {status: 404})
+                return new Response('Not found', { status: 404 })
             }
 
             const error = url.searchParams.get('error')
@@ -77,40 +83,36 @@ export function startOAuthServer(client: Client): void {
                 console.error(`[oauth2] Discord error: ${error}: ${desc}`)
                 return new Response('Authorization failed. Please try /login again.', {
                     status: 400,
-                    headers: {'Content-Type': 'text/plain'},
+                    headers: { 'Content-Type': 'text/plain' },
                 })
             }
 
             const code = url.searchParams.get('code')
             const state = url.searchParams.get('state')
-            if (!code || !state) return new Response('Missing code or state', {status: 400})
+            if (!code || !state) return new Response('Missing code or state', { status: 400 })
 
             const discordUserId = await consumeState(state)
-            if (!discordUserId) return new Response('Invalid or expired state', {status: 400})
+            if (!discordUserId) return new Response('Invalid or expired state', { status: 400 })
 
             try {
-                const {discordUserId: resolvedId} = await exchangeCode(code)
+                const { discordUserId: resolvedId } = await exchangeCode(code)
 
                 if (resolvedId !== discordUserId) {
-                    return new Response('Discord account that initiated login doesn\'t match what just authenticated. Please run /login again.', {status: 403})
+                    return new Response('Discord account that initiated login doesn\'t match what just authenticated. Please run /login again.', { status: 403 })
                 }
 
                 const user = await getUser(discordUserId)
                 if (user) {
                     const externalId = user.externalId ?? user.segaId
-                    const {profile, collection} = await CHUNITHM.actAs(user.discordId).select({
-                        profile: true,
-                        collection: true,
-                    })
-                    await pushProfile(resolvedId, externalId, {...profile, characterImageUrl: collection.characterUrl}, user.descriptionMode as DescriptionMode)
+                    await cfg.fetchAndPush(user, resolvedId, externalId)
                     await setExternalId(resolvedId, externalId)
 
-                    const snippet = buildSnippet(process.env.DISCORD_CLIENT_ID!)
+                    const snippet = await buildSnippet(process.env.DISCORD_CLIENT_ID!, cfg.scriptFilename)
                     try {
                         const dmUser = await client.users.fetch(resolvedId)
                         await dmUser.send({
                             content: [
-                                '## CHUNITHM profile linked!',
+                                `## ${cfg.gameName} profile linked!`,
                                 'One last step: open **discord.com** in your browser, press `F12` -> **Console**, paste the file below, and hit Enter. If you\'re on a custom Discord client, you can use the devtools in that as well.',
                                 '',
                                 '**This is a temporary workaround** as Discord doesn\'t list custom app widgets on their UI just yet.',
@@ -119,16 +121,14 @@ export function startOAuthServer(client: Client): void {
                             ].join('\n'),
                             files: [{
                                 attachment: Buffer.from(snippet, 'utf8'),
-                                name: 'add-chunithm-widget.js',
+                                name: cfg.scriptFilename,
                             }],
                         })
                         await dmUser.send({
                             content: [
-                                'I\'ll keep watch of your CHUNITHM profile and automatically update after every few sets. However, the more you play in a day, the longer I\'ll wait as to not overload the servers.',
+                                `I'll keep watch of your ${cfg.gameName} profile and automatically update after every few sets. However, the more you play in a day, the longer I'll wait as to not overload the servers.`,
                                 '',
-                                'If you want to manage your CHUNITHM profile via Discord, we recommend looking into [chuni penguin bot](https://chuni-penguin.beerpsi.cc/).',
-                                '',
-                                'That\'s all!'
+                                'That\'s all!',
                             ].join('\n'),
                         })
                     } catch (dmErr) {
@@ -141,13 +141,13 @@ export function startOAuthServer(client: Client): void {
                     return new Response(
                         'Your Discord profile is already linked to a different SEGA ID.\n' +
                         'To re-link: go to Discord Settings -> Connections, remove this app, then run /login again.',
-                        {status: 409, headers: {'Content-Type': 'text/plain'}},
+                        { status: 409, headers: { 'Content-Type': 'text/plain' } },
                     )
                 }
                 console.error('[oauth2] Callback error:', err)
                 return new Response('Authorization failed. Please try /login again.', {
                     status: 500,
-                    headers: {'Content-Type': 'text/plain'},
+                    headers: { 'Content-Type': 'text/plain' },
                 })
             }
 

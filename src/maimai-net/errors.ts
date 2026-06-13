@@ -1,9 +1,9 @@
 import { SegaNetError as BaseSegaNetError } from '@/sega/errors'
 
-export class ChuniNetError extends BaseSegaNetError {
+export class MaimaiNetError extends BaseSegaNetError {
     constructor(code: number, message: string) {
         super(code, message)
-        this.name = 'ChuniNetError'
+        this.name = 'MaimaiNetError'
     }
 }
 

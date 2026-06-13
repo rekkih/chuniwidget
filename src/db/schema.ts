@@ -7,9 +7,10 @@ export const users = pgTable('users', {
     chuniToken: text('chuni_token').notNull(),
     descriptionMode: text('description_mode').notNull().default('title'),
     convertWidth: boolean('convert_width').notNull().default(true),
-    linkedAt: timestamp('linked_at', {withTimezone: true}).notNull().defaultNow(),
-    lastSyncedAt: timestamp('last_synced_at', {withTimezone: true}),
-    lastPlayedAt: timestamp('last_played_at', {withTimezone: true}),
+    linkedAt: timestamp('linked_at', { withTimezone: true }).notNull().defaultNow(),
+    lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+    lastPlayedAt: timestamp('last_played_at', { withTimezone: true }),
+    syncPaused: boolean('sync_paused').notNull().default(false),
 })
 
 export type User = typeof users.$inferSelect;
@@ -17,11 +18,11 @@ export type User = typeof users.$inferSelect;
 export const loginAttempts = pgTable('login_attempts', {
     discordId: text('discord_id').primaryKey(),
     count: integer('count').notNull().default(0),
-    windowStart: timestamp('window_start', {withTimezone: true}).notNull().defaultNow(),
+    windowStart: timestamp('window_start', { withTimezone: true }).notNull().defaultNow(),
 })
 
 export const oauthStates = pgTable('oauth_states', {
     state: text('state').primaryKey(),
     discordId: text('discord_id').notNull(),
-    expiresAt: timestamp('expires_at', {withTimezone: true}).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
 })

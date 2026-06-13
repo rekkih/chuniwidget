@@ -1,12 +1,12 @@
 // =============================================================================
-// Add CHUNITHM widget to your Discord profile
+// Add widget to your Discord profile
 //
 // What this script does, step by step:
 //   1. Reads your Discord session token and user ID from Discord's own memory.
 //      These are already stored in your browser by discord.com - we are not
 //      sending them anywhere new.
 //   2. Fetches your current profile widget list so we don't remove anything.
-//   3. Adds the CHUNITHM widget to that list.
+//   3. Adds the widget to that list.
 //   4. Sends the updated list back to Discord's API.
 //
 // This script only ever talks to discord.com (/api/v9/...).
@@ -16,7 +16,7 @@
 
 (async () => {
 
-    // The ID of the Yakuon Discord application. Hard-coded so you can verify it.
+    // The ID of the Discord application. Hard-coded so you can verify it.
     const APP_ID = "{{APP_ID}}";
 
 
@@ -191,30 +191,39 @@
 
     // --- Generic 401 (error code 40001) ---
     //
-    // This usually means one of two things:
-    //   A) The Yakuon app doesn't have a published widget config yet (nothing
-    //      to add). This shouldn't happen in normal use.
-    //   B) Your MFA session cookie is stale. Fix: open Settings -> My Account ->
+    // This can mean one of three things, checked in order:
+    //   A) You haven't connected this bot to your Discord profile yet.
+    //      Run /login in Discord and complete the "Connect Discord Profile" step first.
+    //   B) The bot has no published widget config yet. Contact the bot owner.
+    //   C) Your MFA session cookie is stale. Fix: open Settings -> My Account ->
     //      Two-Factor Authentication -> "View Backup Codes", enter your password
     //      when prompted, then cancel. This refreshes the cookie. Re-run
     //      this script within 5 minutes.
 
     if (response.status === 401 && errorBody?.code === 40001) {
-        const widgetConfig = await fetch(`/api/v9/applications/${APP_ID}/widget-configs`)
-            .then(r => r.json())
+        // Check whether the app has a published widget config.
+        // Must send the user token — this endpoint is not publicly accessible.
+        const configRes = await fetch(`/api/v9/applications/${APP_ID}/widget-configs`, { headers })
             .catch(() => null);
+        const widgetConfig = configRes?.ok ? await configRes.json().catch(() => null) : null;
 
-        if (Array.isArray(widgetConfig) && widgetConfig.length === 0) {
+        if (configRes?.ok && Array.isArray(widgetConfig) && widgetConfig.length === 0) {
             return console.error(
                 '%c[Yakuon] The app has no published widget config yet. Contact the bot owner.',
                 'color:#f87171;font-weight:600',
             );
         }
 
+        // If the config check itself was unauthorized, or we got a config back,
+        // the most likely cause is that the Discord OAuth step hasn't been completed
+        // for this specific bot. A stale MFA session is the secondary possibility.
         return console.error(
-            '%c[Yakuon] Your MFA session is stale.\n\n' +
-            'Fix: Settings -> My Account -> Two-Factor Authentication -> "View Backup Codes" -> enter your password -> cancel.\n' +
-            'Then re-run this script within 5 minutes.',
+            '%c[Yakuon] Authorization failed (40001). Most likely causes:\n\n' +
+            '1. You have not yet linked your account with this bot.\n' +
+            '   Run /login in Discord and complete the "Connect Discord Profile" OAuth step.\n\n' +
+            '2. Your MFA session cookie is stale (less common).\n' +
+            '   Fix: Settings -> My Account -> Two-Factor Authentication -> "View Backup Codes"\n' +
+            '   -> enter your password -> cancel. Then re-run within 5 minutes.',
             'color:#fde047;font-weight:600',
         );
     }

@@ -4,9 +4,9 @@ import {
     SlashCommandBuilder,
     StringSelectMenuBuilder,
 } from 'discord.js'
-import type {BotCommand} from '../types'
-import {getUser, setConvertWidth, setDescriptionMode} from '../store'
-import {DESCRIPTION_MODES, isDescriptionMode, type DescriptionMode} from '../discord/descriptionModes'
+import type { BotCommand } from '@/types'
+import { getUser, setConvertWidth, setDescriptionMode } from '@/store'
+import { DESCRIPTION_MODES, isDescriptionMode, type DescriptionMode } from '@/discord/maimai/descriptionModes'
 
 const DESCRIPTION_ID = 'config:description'
 const WIDTH_ID = 'config:width'
@@ -17,7 +17,7 @@ function descriptionMenu(current: DescriptionMode): ActionRowBuilder<StringSelec
         .setPlaceholder('What should your profile show?')
         .addOptions(
             (Object.entries(DESCRIPTION_MODES) as [DescriptionMode, (typeof DESCRIPTION_MODES)[DescriptionMode]][])
-                .map(([value, {label, description}]) => ({
+                .map(([value, { label, description }]) => ({
                     value,
                     label,
                     description,
@@ -32,8 +32,8 @@ function widthMenu(current: boolean): ActionRowBuilder<StringSelectMenuBuilder> 
         .setCustomId(WIDTH_ID)
         .setPlaceholder('Convert full-width characters?')
         .addOptions(
-            {value: 'on', label: 'Convert full-width', description: 'Fold ＦＵＬＬＷＩＤＴＨ text to normal width', default: current},
-            {value: 'off', label: 'Keep as-is', description: 'Show names and titles exactly as set in-game', default: !current},
+            { value: 'on', label: 'Convert full-width', description: 'Fold ＦＵＬＬＷＩＤＴＨ text to normal width', default: current },
+            { value: 'off', label: 'Keep as-is', description: 'Show names and titles exactly as set in-game', default: !current },
         )
     return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu)
 }
@@ -41,7 +41,7 @@ function widthMenu(current: boolean): ActionRowBuilder<StringSelectMenuBuilder> 
 export const configCommand: BotCommand = {
     definition: new SlashCommandBuilder()
         .setName('config')
-        .setDescription('Choose what your CHUNITHM profile widget shows'),
+        .setDescription('Choose what your maimai DX profile widget shows'),
 
     steps: [
         {
@@ -59,7 +59,7 @@ export const configCommand: BotCommand = {
                 const current = isDescriptionMode(user.descriptionMode) ? user.descriptionMode : 'title'
                 await interaction.reply({
                     flags: MessageFlagsBitField.Flags.Ephemeral,
-                    content: 'Configure your CHUNITHM profile widget:',
+                    content: 'Configure your maimai DX profile widget:',
                     components: [descriptionMenu(current), widthMenu(user.convertWidth)],
                 })
             },
