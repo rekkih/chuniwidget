@@ -85,11 +85,15 @@ export function startOAuthServer(client: Client): void {
             const state = url.searchParams.get('state')
             if (!code || !state) return new Response('Missing code or state', {status: 400})
 
-            const discordUserId = consumeState(state)
+            const discordUserId = await consumeState(state)
             if (!discordUserId) return new Response('Invalid or expired state', {status: 400})
 
             try {
                 const {discordUserId: resolvedId} = await exchangeCode(code)
+
+                if (resolvedId !== discordUserId) {
+                    return new Response('Discord account that initiated login doesn\'t match what just authenticated. Please run /login again.', {status: 403})
+                }
 
                 const user = await getUser(discordUserId)
                 if (user) {
@@ -147,7 +151,12 @@ export function startOAuthServer(client: Client): void {
                 })
             }
 
-            return new Response(CONNECTED_PAGE, {headers: {'Content-Type': 'text/html'}})
+            return new Response(CONNECTED_PAGE, {
+                headers: {
+                    'Content-Type': 'text/html',
+                    'Content-Security-Policy': 'default-src \'none\'; style-src \'unsafe-inline\'',
+                },
+            })
         },
     })
 

@@ -222,7 +222,7 @@ export const loginCommand: BotCommand = {
 
                 await setUser(interaction.user.id, segaId, clal)
 
-                const state = createState(interaction.user.id)
+                const state = await createState(interaction.user.id)
                 await interaction.editReply({
                     content: [
                         'Got it! CHUNITHM-NET login successful. You now need to re-authenticate Yakuon as a **Game Profile** rather than a bot.',

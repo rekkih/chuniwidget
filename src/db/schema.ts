@@ -19,3 +19,9 @@ export const loginAttempts = pgTable('login_attempts', {
     count: integer('count').notNull().default(0),
     windowStart: timestamp('window_start', {withTimezone: true}).notNull().defaultNow(),
 })
+
+export const oauthStates = pgTable('oauth_states', {
+    state: text('state').primaryKey(),
+    discordId: text('discord_id').notNull(),
+    expiresAt: timestamp('expires_at', {withTimezone: true}).notNull(),
+})

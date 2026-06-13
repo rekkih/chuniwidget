@@ -66,33 +66,36 @@ export async function checkAndRecordLoginAttempt(
     discordId: string,
 ): Promise<{ allowed: boolean; retryAfterMs?: number }> {
     const now = new Date()
-    const rows = await db.select()
-        .from(loginAttempts)
-        .where(eq(loginAttempts.discordId, discordId))
-        .limit(1)
-    const existing = rows[0]
+    return db.transaction(async (tx) => {
+        const rows = await tx.select()
+            .from(loginAttempts)
+            .where(eq(loginAttempts.discordId, discordId))
+            .limit(1)
+            .for('update')
+        const existing = rows[0]
 
-    if (!existing || now.getTime() - existing.windowStart.getTime() >= LOGIN_WINDOW_MS) {
-        await db.insert(loginAttempts)
-            .values({ discordId, count: 1, windowStart: now })
-            .onConflictDoUpdate({
-                target: loginAttempts.discordId,
-                set: { count: 1, windowStart: now },
-            })
-        return { allowed: true }
-    }
-
-    if (existing.count >= LOGIN_MAX_ATTEMPTS) {
-        return {
-            allowed: false,
-            retryAfterMs: existing.windowStart.getTime() + LOGIN_WINDOW_MS - now.getTime(),
+        if (!existing || now.getTime() - existing.windowStart.getTime() >= LOGIN_WINDOW_MS) {
+            await tx.insert(loginAttempts)
+                .values({ discordId, count: 1, windowStart: now })
+                .onConflictDoUpdate({
+                    target: loginAttempts.discordId,
+                    set: { count: 1, windowStart: now },
+                })
+            return { allowed: true }
         }
-    }
 
-    await db.update(loginAttempts)
-        .set({ count: existing.count + 1 })
-        .where(eq(loginAttempts.discordId, discordId))
-    return { allowed: true }
+        if (existing.count >= LOGIN_MAX_ATTEMPTS) {
+            return {
+                allowed: false,
+                retryAfterMs: existing.windowStart.getTime() + LOGIN_WINDOW_MS - now.getTime(),
+            }
+        }
+
+        await tx.update(loginAttempts)
+            .set({ count: existing.count + 1 })
+            .where(eq(loginAttempts.discordId, discordId))
+        return { allowed: true }
+    })
 }
 
 export async function deleteUser(discordId: string): Promise<void> {

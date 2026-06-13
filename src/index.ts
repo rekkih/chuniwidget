@@ -5,12 +5,13 @@ import {commands} from './commands'
 import {ensureWidgetConfig} from './discord/widgetConfig'
 import {startOAuthServer} from './oauth2/server'
 import {startPeriodicRefresh} from './discord/profileRefresh'
+import {startStateCleanup} from './oauth2/state'
 
 const token = process.env.DISCORD_TOKEN
 const clientId = process.env.DISCORD_CLIENT_ID
 
-if (!token || !clientId) {
-    console.error('Missing DISCORD_TOKEN or DISCORD_CLIENT_ID in environment')
+if (!token || !clientId || !process.env.DISCORD_CLIENT_SECRET || !process.env.OAUTH2_REDIRECT_URI) {
+    console.error('Missing required env vars: DISCORD_TOKEN, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, OAUTH2_REDIRECT_URI')
     process.exit(1)
 }
 
@@ -57,6 +58,7 @@ client.once('clientReady', async () => {
     }
 
     startPeriodicRefresh()
+    startStateCleanup()
 })
 
 client.on('interactionCreate', async (interaction) => {
