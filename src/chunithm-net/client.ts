@@ -69,6 +69,13 @@ export class ChuniClient {
 
     constructor(private readonly clal: string) {}
 
+    async getCookies(): Promise<Map<string, string>> {
+        if (!this._cookies) {
+            this._cookies = await exchangeClalForSession(this.clal)
+        }
+        return this._cookies
+    }
+
     async getPage(path: string): Promise<string> {
         if (!this._cookies) {
             this._cookies = await exchangeClalForSession(this.clal)

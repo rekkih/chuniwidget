@@ -1,6 +1,7 @@
 import {ChuniClient} from './client'
 import {fetchPlayerData, type PlayerData} from './fetchers/playerData'
 import {fetchCollection, type CollectionData} from './fetchers/collection'
+import {fetchCustomise, type CustomiseData} from './fetchers/customise'
 import {getUser} from '@/store'
 import {toHalfWidth, computeSyncInterval, parseJstDate, debugLog} from '@/utils'
 
@@ -15,11 +16,13 @@ type ResolveSelection<T, S extends FieldSelection<T>> = S extends true
 export interface SelectQuery {
     profile?: FieldSelection<PlayerData>
     collection?: FieldSelection<CollectionData>
+    customise?: FieldSelection<CustomiseData>
 }
 
 export type SelectResult<Q extends SelectQuery> =
     (Q extends {profile: FieldSelection<PlayerData>} ? {profile: ResolveSelection<PlayerData, Q['profile']>} : Record<never, never>) &
-    (Q extends {collection: FieldSelection<CollectionData>} ? {collection: ResolveSelection<CollectionData, Q['collection']>} : Record<never, never>)
+    (Q extends {collection: FieldSelection<CollectionData>} ? {collection: ResolveSelection<CollectionData, Q['collection']>} : Record<never, never>) &
+    (Q extends {customise: FieldSelection<CustomiseData>} ? {customise: ResolveSelection<CustomiseData, Q['customise']>} : Record<never, never>)
 
 export type PlayerProfile = PlayerData & {characterImageUrl: string}
 
@@ -28,6 +31,7 @@ export type PlayerProfile = PlayerData & {characterImageUrl: string}
 interface CacheEntry {
     playerData?: PlayerData
     collection?: CollectionData
+    customise?: CustomiseData
     expiresAt: number
 }
 
@@ -72,6 +76,7 @@ export class ChuniActor {
 
         const needsProfile = 'profile' in query
         const needsCollection = 'collection' in query
+        const needsCustomise = 'customise' in query
 
         const now = Date.now()
         const cached = profileCache.get(this.discordId)
@@ -79,11 +84,13 @@ export class ChuniActor {
 
         const mustFetchPlayerData = needsProfile && !(cacheAlive && cached!.playerData)
         const mustFetchCollection = needsCollection && !(cacheAlive && cached!.collection)
+        const mustFetchCustomise = needsCustomise && !(cacheAlive && cached!.customise)
 
         let playerData = cached?.playerData
         let collection = cached?.collection
+        let customise = cached?.customise
 
-        if (mustFetchPlayerData || mustFetchCollection) {
+        if (mustFetchPlayerData || mustFetchCollection || mustFetchCustomise) {
             this._client ??= new ChuniClient(user.chuniToken)
 
             // CHUNITHM-NET requires sequential requests; concurrent fetches get bounced.
@@ -95,11 +102,16 @@ export class ChuniActor {
                 collection = await fetchCollection(this._client)
                 debugLog(`chuni.select: fetched collection for ${this.discordId}`)
             }
+            if (mustFetchCustomise) {
+                customise = await fetchCustomise(this._client)
+                debugLog(`chuni.select: fetched customise for ${this.discordId}`)
+            }
 
             const ttl = computeSyncInterval(parseJstDate(playerData?.lastPlayDate ?? ''))
             profileCache.set(this.discordId, {
                 playerData: playerData ?? cached?.playerData,
                 collection: collection ?? cached?.collection,
+                customise: customise ?? cached?.customise,
                 expiresAt: now + ttl,
             })
         } else {
@@ -116,6 +128,9 @@ export class ChuniActor {
         }
         if (needsCollection && collection) {
             (result as Record<string, unknown>)['collection'] = pickFields(collection, query.collection!)
+        }
+        if (needsCustomise && customise) {
+            (result as Record<string, unknown>)['customise'] = pickFields(customise, query.customise!)
         }
         return result as SelectResult<Q>
     }
