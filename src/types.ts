@@ -3,6 +3,7 @@ import type {
     ChatInputCommandInteraction,
     ModalSubmitInteraction,
     SlashCommandBuilder,
+    SlashCommandOptionsOnlyBuilder,
     StringSelectMenuInteraction,
 } from 'discord.js'
 
@@ -32,6 +33,6 @@ export type SelectStep = {
 export type Step = CommandStep | ButtonStep | ModalStep | SelectStep
 
 export type BotCommand = {
-    definition: SlashCommandBuilder
+    definition: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder
     steps: Step[]
 }
