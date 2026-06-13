@@ -58,7 +58,7 @@ function buildOAuthUrl(state: string): string {
         client_id: process.env.DISCORD_CLIENT_ID!,
         response_type: 'code',
         redirect_uri: process.env.OAUTH2_REDIRECT_URI!,
-        scope: 'sdk.social_layer',
+        scope: 'sdk.social_layer+applications.commands',
         state,
     })
     return `https://discord.com/oauth2/authorize?${params}`
