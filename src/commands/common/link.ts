@@ -27,6 +27,8 @@ export const linkCommand: BotCommand = {
                         `## ${process.env.BOT_NAME ?? 'chunibot'}`,
                         `Displays your **${gameName}** stats as a live widget on your Discord profile.`,
                         '',
+                        'This bot is free to use and [open source](<https://github.com/rekkih/chuniwidget>).',
+                        '',
                         'Click below to add the bot, then run `/login` to get started.',
                     ].join('\n'),
                     components: [
