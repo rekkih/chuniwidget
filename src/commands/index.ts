@@ -2,6 +2,7 @@ import { ApplicationIntegrationType, InteractionContextType } from 'discord.js'
 import type { BotCommand } from '@/types'
 import { unlinkCommand } from './common/logout'
 import { contactCommand } from './common/contact'
+import { linkCommand } from './common/link'
 import { loginCommand as chuniLogin } from './chunithm/login'
 import { configCommand as chuniConfig } from './chunithm/config'
 import { refreshCommand as chuniRefresh } from './chunithm/refresh'
@@ -16,7 +17,7 @@ const gameCommands: BotCommand[] = game === 'maimai'
     ? [maimaiLogin, maimaiConfig, maimaiRefresh]
     : [chuniLogin, chuniConfig, chuniRefresh, profileGifCommand]
 
-const ALL_COMMANDS = [...gameCommands, unlinkCommand, contactCommand]
+const ALL_COMMANDS = [...gameCommands, unlinkCommand, contactCommand, linkCommand]
 
 for (const cmd of ALL_COMMANDS) {
     cmd.definition

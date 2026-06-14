@@ -29,7 +29,6 @@ export async function syncUser(user: User, force = false): Promise<SyncResult> {
             user.descriptionMode as DescriptionMode,
             metadata,
             records,
-            user.convertWidth,
         )
         await recordSync(user.discordId, now, null)
         return { status: 'ok', profile: { name: profile.name, rating: profile.rating } }
