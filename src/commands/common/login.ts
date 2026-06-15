@@ -80,7 +80,7 @@ export function buildLoginCommand(cfg: LoginCommandConfig): BotCommand {
         '',
         `**Your password is safe here.** Your password is only stored in temporary memory for the initial login process and destroyed immediately after. After login, we store your unique token that we'll use to read data from ${cfg.netName}.`,
         '',
-        `${process.env.BOT_NAME} is **open source** and can be freely inspected to confirm this.`,
+        `${process.env.BOT_NAME} is **open source** and can be freely inspected to confirm this. **You should ONLY give your SEGA ID to open source bots.** Closed-source bots are known to steal accounts.`,
         '',
         '-# Note: Discord modals show text inputs as plain text while typing. Make sure no one can see your screen.',
         '-# This software is provided as-is with no warranty. By continuing you accept that the developers are not liable for any loss, damage, or account action resulting from misuse of this bot. Directions are there to be followed **exactly** and will not be our fault that you cannot read.',
